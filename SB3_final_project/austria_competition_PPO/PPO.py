@@ -52,7 +52,7 @@ def make_env():
 
 env_num = 50
 if __name__ == '__main__':
-    env = SubprocVecEnv([lambda: make_env() for i in range(env_num)])
+    env = SubprocVecEnv([lambda: make_env() for _ in range(env_num)])
     env = VecFrameStack(env, 8, channels_order='last')
     env = VecMonitor(env)
     model = PPO("CnnPolicy", env, verbose=1, n_steps=1024, batch_size=64, tensorboard_log="./PPO_cartpole_tensorboard/")

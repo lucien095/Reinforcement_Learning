@@ -1,0 +1,1 @@
+tensorboard --logdir_spec DQN:DQN/log/DQN,DDQN:DDQN/log/DDQN,Dueling_DQN:Dueling_DQN/log/Dueling_DQN,Parallel_DQN:Parallel_DQN/log/DQN

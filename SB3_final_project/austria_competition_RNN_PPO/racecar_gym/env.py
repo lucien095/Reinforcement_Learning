@@ -110,11 +110,11 @@ class RaceEnv(gym.Env):
 
         my_progress = infos["progress"] + 1 if infos["progress"] - self.old_progress < -0.5 else infos["progress"]
         r_progress = 1000 * (my_progress - self.old_progress)
-        r_track_point = 15 if self.current_checkpoint != infos["checkpoint"] else 0
+        r_track_point = 5 if self.current_checkpoint != infos["checkpoint"] else 0
 
         if infos["wall_collision"]:
             terminates = True
-            p_wall_collision = -50
+            p_wall_collision = -10
 
         self.old_progress = infos["progress"]
         self.old_steer = dict_actions['steering_competition']

@@ -114,7 +114,7 @@ class RaceEnv(gym.Env):
 
         if infos["wall_collision"]:
             terminates = True
-            p_wall_collision = -50
+            p_wall_collision = -10
 
         self.old_progress = infos["progress"]
         self.old_steer = dict_actions['steering_competition']

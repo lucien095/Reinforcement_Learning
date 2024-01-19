@@ -56,4 +56,4 @@ if __name__ == '__main__':
     env = VecFrameStack(env, 8, channels_order='last')
     env = VecMonitor(env)
     model = PPO("CnnPolicy", env, verbose=1, n_steps=1024, batch_size=64, tensorboard_log="./PPO_cartpole_tensorboard/")
-    model.learn(total_timesteps=100000000, callback=checkpoint_callback)
+    model.learn(total_timesteps=1000000000, callback=checkpoint_callback)

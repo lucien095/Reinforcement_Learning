@@ -4,9 +4,7 @@ from numpy import array, float32
 # noinspection PyUnresolvedReferences
 import racecar_gym.envs.gym_api
 import time
-import cv2
 import numpy as np
-from collections import deque
 
 
 class RaceEnv(gym.Env):
@@ -48,11 +46,12 @@ class RaceEnv(gym.Env):
         self.time_limit = 100.0
         self.cur_step = 0
 
-        self.old_progress = 0
         self.old_steer = 0
+        self.old_progress = 0
+        self.current_checkpoint = 0
+
         self.start = 0
         self.end = 0
-        self.current_checkpoint = 0
 
     def observation_postprocess(self, obs):
         obs = obs[self.camera_name].astype(np.uint8).transpose(2, 0, 1)
@@ -65,14 +64,14 @@ class RaceEnv(gym.Env):
             kwargs['options'] = {'mode': 'random'}
 
         obs, info = self.env.reset(*args, **kwargs)
-        while info["wrong_way"] or info["wall_collision"]:
+        while info["wrong_way"] or info["wall_collision"] or info["obstacle"] < 0.5:
             obs, info = self.env.reset(*args, **kwargs)
         obs = self.observation_postprocess(obs)
         self.start = time.process_time()
 
         self.cur_step = 0
-        self.old_progress = info["progress"]
         self.old_steer = 0
+        self.old_progress = info["progress"]
         self.current_checkpoint = info["checkpoint"]
         return obs, info
 
@@ -92,10 +91,10 @@ class RaceEnv(gym.Env):
         obs = self.observation_postprocess(obs)
 
         self.end = time.process_time()
-        if self.cur_step == 1:
-            self.old_steer = dict_actions['steering_competition']
-        if self.end - self.start >= self.time_limit:
-            truncates = True
+        truncates = True if self.end - self.start >= self.time_limit else False
+
+        current_progress = infos["progress"] + 1 if infos["progress"] - self.old_progress < -0.5 else infos["progress"]
+        progress = current_progress - self.old_progress
 
         r_motor = 0
         p_steer = 0
@@ -104,23 +103,21 @@ class RaceEnv(gym.Env):
         p_wall_collision = 0
 
         r1 = 1
-        r2 = -0.01
-        r_motor = r1 * (dict_actions['motor_competition'] if dict_actions['motor_competition'] > 0 else -1)
-        p_steer = r2 * abs(dict_actions['steering_competition'] - self.old_steer)
+        r2 = -0.1
+        r_motor = r1 * motor_action
+        p_steer = r2 * abs(steering_action - self.old_steer)
 
-        my_progress = infos["progress"] + 1 if infos["progress"] - self.old_progress < -0.5 else infos["progress"]
-        r_progress = 1000 * (my_progress - self.old_progress)
-        r_track_point = 5 if self.current_checkpoint != infos["checkpoint"] else 0
+        r_progress = (1000 * progress) if progress > 0.0 and motor_action > 0 else -1
+        r_track_point = 15 if self.current_checkpoint != infos["checkpoint"] else 0
 
-        if infos["wall_collision"]:
-            terminates = True
-            p_wall_collision = -10
-
-        self.old_progress = infos["progress"]
-        self.old_steer = dict_actions['steering_competition']
-        self.current_checkpoint = infos["checkpoint"]
+        terminates = True if infos["wall_collision"] else False
+        p_wall_collision = -20 if infos["wall_collision"] else 0
 
         reward = r_motor + p_steer + r_progress + r_track_point + p_wall_collision
+
+        self.old_steer = steering_action
+        self.old_progress = infos["progress"]
+        self.current_checkpoint = infos["checkpoint"]
 
         return obs, reward, terminates, truncates, infos
 

@@ -53,7 +53,10 @@ def make_env():
 env_num = 50
 if __name__ == '__main__':
     env = SubprocVecEnv([lambda: make_env() for _ in range(env_num)])
-    env = VecFrameStack(env, 1, channels_order='last')
+    env = VecFrameStack(env, 8, channels_order='last')
     env = VecMonitor(env)
-    model = RecurrentPPO("CnnLstmPolicy", env, verbose=1, n_steps=1024, batch_size=64, tensorboard_log="./RNN_PPO_cartpole_tensorboard/")
+    model = RecurrentPPO("CnnLstmPolicy", env, verbose=1
+                         , n_steps=512, batch_size=512
+                         , ent_coef=0.01, vf_coef=0.5
+                         , tensorboard_log="./RNN_PPO_cartpole_tensorboard/")
     model.learn(total_timesteps=100000000, callback=checkpoint_callback)

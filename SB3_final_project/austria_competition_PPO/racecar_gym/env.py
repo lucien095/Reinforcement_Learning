@@ -64,14 +64,14 @@ class RaceEnv(gym.Env):
             kwargs['options'] = {'mode': 'random'}
 
         obs, info = self.env.reset(*args, **kwargs)
-        while info["wall_collision"] or info["wrong_way"]:
-            obs, info = self.env.reset(*args, **kwargs)
         obs = self.observation_postprocess(obs)
         self.start = time.process_time()
 
         self.cur_step = 0
         self.prev_steer = 0
         self.prev_progress = info["progress"]
+        if info["checkpoint"] == 5:
+            info["checkpoint"] = 4
         self.prev_checkpoint = info["checkpoint"]
         return obs, info
 
@@ -93,21 +93,26 @@ class RaceEnv(gym.Env):
         self.end = time.process_time()
         truncates = True if self.end - self.start >= self.time_limit else False
 
+        if infos["checkpoint"] == 5:
+            infos["checkpoint"] = 4
+
         current_progress = (infos["progress"] + 1) if infos["progress"] - self.prev_progress < -0.5 else infos["progress"]
         progress = current_progress - self.prev_progress
-        terrify_stop = True if motor_action <= 0 else False
 
-        r1 = 1
-        r2 = -0.1
-        r_motor = r1 * motor_action if not terrify_stop else -0.1
-        p_steer = r2 * abs(steering_action - self.prev_steer)
+        if progress > 0:
+            r1 = 1
+            r2 = -0.1
+            r_motor = r1 * motor_action
+            p_steer = r2 * abs(steering_action - self.prev_steer)
 
-        r_progress = 1000 * progress
-        r_track_point = 1 if self.prev_checkpoint != infos["checkpoint"] else 0
+            r_progress = 1000 * progress
+            r_track_point = 1 if self.prev_checkpoint != infos["checkpoint"] else 0
 
-        p_wall_collision = -2 if infos["wall_collision"] else 0
+            p_wall_collision = -2 if infos["wall_collision"] else 0
 
-        reward = r_motor + p_steer + r_progress + r_track_point + p_wall_collision
+            reward = r_motor + p_steer + r_progress + r_track_point + p_wall_collision
+        else:
+            reward = progress
 
         self.prev_steer = steering_action
         self.prev_progress = infos["progress"]

@@ -55,6 +55,8 @@ class FixedTimestepSensor(BulletSensor[T], ABC):
 
     def reset(self, body_id: int, joint_index: int = None):
         self._sensor.reset(body_id=body_id, joint_index=joint_index)
+        # Deal with previous episode wall collision observation
+        self._last_observation = None
 
 
 class Lidar(BulletSensor[NDArray[(Any,), np.float32]]):

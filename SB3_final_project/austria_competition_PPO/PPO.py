@@ -4,15 +4,10 @@ from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
 from racecar_gym.env import RaceEnv
 import numpy as np
 
-import gymnasium as gym
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, CloudpickleWrapper
-
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecFrameStack, VecMonitor
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvStepReturn, VecEnvWrapper
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecCheckNan, VecFrameStack, VecMonitor
 from stable_baselines3.common.callbacks import CheckpointCallback
-from sb3_contrib import RecurrentPPO
-from stable_baselines3.common.evaluation import evaluate_policy
+
 
 # Save a checkpoint every 1000 steps
 checkpoint_callback = CheckpointCallback(
@@ -55,5 +50,8 @@ if __name__ == '__main__':
     env = SubprocVecEnv([lambda: make_env() for _ in range(env_num)])
     env = VecFrameStack(env, 8, channels_order='last')
     env = VecMonitor(env)
-    model = PPO("CnnPolicy", env, verbose=1, n_steps=1024, batch_size=64, tensorboard_log="./PPO_cartpole_tensorboard/")
+    model = PPO("CnnPolicy", env, verbose=1
+                , n_steps=1024, batch_size=512
+                , ent_coef=0.01, vf_coef=0.5
+                , tensorboard_log="./PPO_cartpole_tensorboard/")
     model.learn(total_timesteps=1000000000, callback=checkpoint_callback)

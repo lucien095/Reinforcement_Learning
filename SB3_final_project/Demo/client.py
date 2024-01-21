@@ -15,7 +15,7 @@ from sb3_contrib import RecurrentPPO
 from stable_baselines3.common.evaluation import evaluate_policy
 step_cnt = 0
 
-model = PPO.load('log_as/rl_model_1700000_steps.zip')
+model = RecurrentPPO.load('log_as/')
 
 frames = deque(maxlen=8)
 

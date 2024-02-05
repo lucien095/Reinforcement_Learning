@@ -4,7 +4,7 @@ if __name__ == '__main__':
 
 	config = {
 		"gpu": True,
-		"training_steps": 1e8,
+		"training_steps": 1e9,
 		"update_sample_count": 10000,
 		"discount_factor_gamma": 0.99,
 		"discount_factor_lambda": 0.95,
@@ -21,7 +21,9 @@ if __name__ == '__main__':
 		"eval_interval": int(2**20),
 		"eval_episode": 3,
 
-		"env_n": 256,
+		# "env_n": 256, # Training
+		"env_n": 1,   # Testing
 	}
 	agent = AtariPPOAgent(config)
-	agent.train()
+	# agent.train()
+	agent.load_and_evaluate('logs/Enduro/model_355467264_2370.pth')

@@ -26,8 +26,8 @@ class AtariPPOAgent(PPOBaseAgent):
 		# initialize test_env
 		# self.test_env = ???
 		self.test_env = self.make_env(config['env_id'])()
-		'''self.test_env = gym.wrappers.RecordVideo(self.test_env, 'video')
-		self.test_env.metadata['render_fps'] = 30'''
+		self.test_env = gym.wrappers.RecordVideo(self.test_env, 'video')
+		self.test_env.metadata['render_fps'] = 30
 
 		self.net = AtariNet(self.env.single_action_space.n)
 		self.net.to(self.device)

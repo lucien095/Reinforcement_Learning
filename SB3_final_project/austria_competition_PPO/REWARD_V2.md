@@ -60,3 +60,20 @@ penalty is 1.5 per m/s. A first run with `a_lat=4.0` and a penalty of 0.5 drove 
   (`./PPO_v2_tensorboard/`).
 - At evaluation time use the same wrappers as `PPO_v2.py` (gray scale, resize 84, frame stack 8). The policy
   uses only the camera image, so the competition server needs no change.
+
+## Training log (4 CPU cores, 8 environments, about 70 steps/s)
+
+| Run | Change | Hairpin pass rate (10 episodes) |
+| --- | --- | --- |
+| 1 | small stall penalty | 0/10, the car parked in front of corners |
+| 2 | stall penalty 0.3 and stall termination | 0/10 at 144k steps, drove into the hairpin exit at 3.1 m/s |
+| 3 | `a_lat` 2.8, overspeed penalty 1.5, resumed from run 2 | 4/10 at 128k, then 0/10 at 208k (over-braking) |
+| 4 | resumed from the 4/10 checkpoint, constant lr 1e-4 | 4/10 at 64k and 144k, then 1/10 at 208k |
+
+`models_v2/ppo_v2_hairpin_4of10.zip` is the best checkpoint (4/10). Evaluate it with
+`PYTHONPATH=. python evaluate_hairpin.py models_v2/ppo_v2_hairpin_4of10.zip 10`.
+
+Known problem: in runs 3 and 4 the policy degrades after about 200k steps by braking far too hard in front of
+the hairpin (motor -1, speed near 0, ending against the wall). Ideas: reduce the overspeed penalty or cap it
+per step, add a reward for keeping speed close to the allowed speed, use more environments, or train longer
+with checkpoint selection by hairpin pass rate.

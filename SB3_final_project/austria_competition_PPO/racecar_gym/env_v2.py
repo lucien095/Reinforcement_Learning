@@ -46,7 +46,10 @@ class RaceEnvV2(gym.Env):
                  k_progress: float = 10.0,  # reward per meter of forward progress
                  k_overspeed: float = 0.5,  # penalty per (m/s) above the braking envelope, per step
                  k_steer: float = 0.05,  # penalty per unit of steering change
-                 k_stall: float = 0.05,  # penalty for standing still where driving is allowed
+                 k_stall: float = 0.3,  # penalty per step while standing still
+                 stall_speed: float = 0.3,  # below this speed (m/s) the car counts as standing still
+                 stall_limit: int = 150,  # consecutive standing-still steps (3 s) that end the episode
+                 stall_end_penalty: float = 10.0,
                  checkpoint_bonus: float = 0.5,
                  crash_penalty_base: float = 5.0,
                  crash_penalty_speed: float = 2.0,  # extra crash penalty per m/s
@@ -75,6 +78,9 @@ class RaceEnvV2(gym.Env):
         self.k_overspeed = k_overspeed
         self.k_steer = k_steer
         self.k_stall = k_stall
+        self.stall_speed = stall_speed
+        self.stall_limit = stall_limit
+        self.stall_end_penalty = stall_end_penalty
         self.checkpoint_bonus = checkpoint_bonus
         self.crash_penalty_base = crash_penalty_base
         self.crash_penalty_speed = crash_penalty_speed
@@ -88,6 +94,7 @@ class RaceEnvV2(gym.Env):
         self.recent_crashes = deque(maxlen=50)
 
         self.cur_step = 0
+        self.stall_steps = 0
         self.prev_steer = 0.0
         self.prev_progress = 0.0
         self.prev_checkpoint = 0
@@ -140,6 +147,7 @@ class RaceEnvV2(gym.Env):
         obs = self.observation_postprocess(obs)
 
         self.cur_step = 0
+        self.stall_steps = 0
         self.prev_steer = 0.0
         self.prev_progress = info["progress"]
         self._fix_checkpoint(info)
@@ -175,7 +183,11 @@ class RaceEnvV2(gym.Env):
         reward = self.k_progress * meters
         reward -= self.k_overspeed * overspeed
         reward -= self.k_steer * abs(steering_action - self.prev_steer)
-        if speed < 0.2 and allowed > 1.5:
+        # Standing still must always be worse than trying: otherwise parking in front of a corner
+        # (no crash, tiny penalty) beats driving through it.
+        stalled = speed < self.stall_speed
+        self.stall_steps = self.stall_steps + 1 if stalled else 0
+        if stalled:
             reward -= self.k_stall
         if self.prev_checkpoint != infos["checkpoint"] and meters > 0:
             reward += self.checkpoint_bonus
@@ -188,7 +200,10 @@ class RaceEnvV2(gym.Env):
         elif wrong_way:
             reward -= self.wrong_way_penalty
 
-        terminates = crashed or wrong_way
+        stall_end = self.stall_steps >= self.stall_limit
+        if stall_end:
+            reward -= self.stall_end_penalty
+        terminates = crashed or wrong_way or stall_end
         truncates = self.cur_step >= self.max_steps
 
         infos["allowed_speed"] = allowed

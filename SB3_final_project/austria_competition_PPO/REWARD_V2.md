@@ -21,7 +21,7 @@ Files:
 | progress | `+10 * meters driven forward` (negative when driving backwards) |
 | overspeed | `-0.5 * max(0, speed - allowed_speed(progress))` |
 | steering change | `-0.05 * abs(steer - prev_steer)` |
-| stall | `-0.05` when speed < 0.2 m/s where the allowed speed is above 1.5 m/s |
+| stall | `-0.3` per step while speed < 0.3 m/s; after 150 such steps in a row (3 s) the episode ends with `-10` |
 | checkpoint | `+0.5` |
 | wall crash | `-(5 + 2 * speed)` and the episode ends |
 | wrong way | `-5` and the episode ends |
@@ -29,6 +29,13 @@ Files:
 There is no throttle bonus. `allowed_speed` is the corner speed limit (`sqrt(a_lat / curvature)`) lowered by
 a braking envelope (`a_brake`), so the penalty starts several meters BEFORE the corner and teaches the agent
 to brake early. For the hairpin (progress about 0.51 to 0.55) the limit is about 2.4 m/s.
+
+## Parking exploit (found in the first training run)
+
+With a small stall penalty (`-0.05`) the first policy learned to stop in front of corners: parking costs
+almost nothing, while crashing costs 5 to 15. The stall penalty is now large and a long stall ends the
+episode, so standing still is always worse than trying to drive. An idle car scores about -55 per episode, a
+full-throttle crash about +5.
 
 ## Curriculum
 

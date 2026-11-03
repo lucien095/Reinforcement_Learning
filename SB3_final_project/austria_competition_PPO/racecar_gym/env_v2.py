@@ -44,7 +44,7 @@ class RaceEnvV2(gym.Env):
                  max_steps: int = 2500,
                  # reward parameters
                  k_progress: float = 10.0,  # reward per meter of forward progress
-                 k_overspeed: float = 0.5,  # penalty per (m/s) above the braking envelope, per step
+                 k_overspeed: float = 1.5,  # penalty per (m/s) above the braking envelope, per step
                  k_steer: float = 0.05,  # penalty per unit of steering change
                  k_stall: float = 0.3,  # penalty per step while standing still
                  stall_speed: float = 0.3,  # below this speed (m/s) the car counts as standing still

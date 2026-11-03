@@ -19,7 +19,7 @@ Files:
 | Term | Value |
 | --- | --- |
 | progress | `+10 * meters driven forward` (negative when driving backwards) |
-| overspeed | `-0.5 * max(0, speed - allowed_speed(progress))` |
+| overspeed | `-1.5 * max(0, speed - allowed_speed(progress))` |
 | steering change | `-0.05 * abs(steer - prev_steer)` |
 | stall | `-0.3` per step while speed < 0.3 m/s; after 150 such steps in a row (3 s) the episode ends with `-10` |
 | checkpoint | `+0.5` |
@@ -28,7 +28,7 @@ Files:
 
 There is no throttle bonus. `allowed_speed` is the corner speed limit (`sqrt(a_lat / curvature)`) lowered by
 a braking envelope (`a_brake`), so the penalty starts several meters BEFORE the corner and teaches the agent
-to brake early. For the hairpin (progress about 0.51 to 0.55) the limit is about 2.4 m/s.
+to brake early. For the hairpin (progress about 0.51 to 0.55) the limit is about 2.0 m/s.
 
 ## Parking exploit (found in the first training run)
 
@@ -43,6 +43,14 @@ With probability `hard_start_prob` (default 0.5) an episode starts 0.06 to 0.16 
 before a sharp corner, so the car has time to accelerate and arrives at the corner fast. Half of those
 starts are replayed from places where the environment crashed recently. The remaining episodes use the
 original random start.
+
+## Measured vehicle limits
+
+At full steering lock the car turns with a radius of about 1.5 m at 1.6 m/s and about 1.8 m at 2.2 m/s, and the
+radius grows with speed. The hairpin centerline radius is about 2 m, so entering it at 3 m/s is physically not
+possible. This is why `a_lat` is 2.8 (measured lateral acceleration is about 2.6 m/s^2) and the overspeed
+penalty is 1.5 per m/s. A first run with `a_lat=4.0` and a penalty of 0.5 drove into the hairpin exit at
+3.1 m/s with almost no steering, in 10 out of 10 test episodes.
 
 ## Tuning
 

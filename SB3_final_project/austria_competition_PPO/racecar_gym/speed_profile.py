@@ -30,7 +30,7 @@ class SpeedProfile:
                  n_bins: int = 400,
                  v_max: float = 5.0,
                  v_min: float = 1.0,
-                 a_lat: float = 4.0,
+                 a_lat: float = 2.8,
                  a_brake: float = 3.0,
                  curvature_smooth_bins: int = 6):
         self.n_bins = n_bins

@@ -46,6 +46,8 @@ if __name__ == '__main__':
     parser.add_argument('--env-num', type=int, default=50)
     parser.add_argument('--total-timesteps', type=int, default=200_000_000)
     parser.add_argument('--resume', type=str, default=None, help='Path of a checkpoint (.zip) to continue from.')
+    parser.add_argument('--lr', type=float, default=None,
+                        help='Constant learning rate. Default: linear decay from 3e-4 (fresh run) or the saved value (resume).')
     args = parser.parse_args()
 
     checkpoint_callback = CheckpointCallback(
@@ -59,12 +61,16 @@ if __name__ == '__main__':
     env = VecMonitor(env)
 
     if args.resume:
-        model = PPO.load(args.resume, env=env, tensorboard_log="./PPO_v2_tensorboard/")
+        custom_objects = {}
+        if args.lr is not None:
+            custom_objects = {"learning_rate": args.lr, "lr_schedule": lambda _: args.lr}
+        model = PPO.load(args.resume, env=env, tensorboard_log="./PPO_v2_tensorboard/",
+                         custom_objects=custom_objects)
     else:
         model = PPO("CnnPolicy", env, verbose=1,
                     n_steps=512, batch_size=1024,
                     gamma=0.995, gae_lambda=0.95,  # longer horizon: braking pays off several seconds later
-                    learning_rate=linear_schedule(3e-4),
+                    learning_rate=args.lr if args.lr is not None else linear_schedule(3e-4),
                     ent_coef=0.02, vf_coef=0.5,
                     tensorboard_log="./PPO_v2_tensorboard/")
     model.learn(total_timesteps=args.total_timesteps, callback=checkpoint_callback)

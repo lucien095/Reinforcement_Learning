@@ -82,7 +82,12 @@ class SingleAgentRaceEnv(gymnasium.Env):
             mode = options['mode']
         else:
             mode = 'grid'
-        obs = self._scenario.agent.reset(self._scenario.world.get_starting_position(self._scenario.agent, mode))
+        if options is not None and options.get('start_pose') is not None:
+            # Explicit start pose ((x, y, z), (roll, pitch, yaw)), used by curriculum starts.
+            start_pose = options['start_pose']
+        else:
+            start_pose = self._scenario.world.get_starting_position(self._scenario.agent, mode)
+        obs = self._scenario.agent.reset(start_pose)
         self._scenario.world.update()
         state = self._scenario.world.state()
         state[self._scenario.agent.id]['collision_penalties'] = np.array(self.collision_penalties)

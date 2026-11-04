@@ -70,6 +70,8 @@ penalty is 1.5 per m/s. A first run with `a_lat=4.0` and a penalty of 0.5 drove 
 | 2 | stall penalty 0.3 and stall termination | 0/10 at 144k steps, drove into the hairpin exit at 3.1 m/s |
 | 3 | `a_lat` 2.8, overspeed penalty 1.5, resumed from run 2 | 4/10 at 128k, then 0/10 at 208k (over-braking) |
 | 4 | resumed from the 4/10 checkpoint, constant lr 1e-4 | 4/10 at 64k and 144k, then 1/10 at 208k |
+| 5 | overspeed penalty 0.8 with a cap of 1.5 m/s, from the 4/10 checkpoint | 2/10 at 48k, 0/10 at 128k (speed about right, but turned in too late) |
+| 6 | added the near-wall penalty | 0/10 at 64k, still running |
 
 `models_v2/ppo_v2_hairpin_4of10.zip` is the best checkpoint (4/10). Evaluate it with
 `PYTHONPATH=. python evaluate_hairpin.py models_v2/ppo_v2_hairpin_4of10.zip 10`.
@@ -79,8 +81,6 @@ the hairpin (motor -1, speed near 0, ending against the wall). Ideas: reduce the
 per step, add a reward for keeping speed close to the allowed speed, use more environments, or train longer
 with checkpoint selection by hairpin pass rate.
 
-| 5 | overspeed penalty 0.8 with a cap of 1.5 m/s, from the 4/10 checkpoint | 2/10 at 48k, 0/10 at 128k (speed about right, but turned in too late) |
-| 6 | added the near-wall penalty | 0/10 at 64k, still running |
 
 Note: the policy sees only the camera image. Wall distance, speed and the allowed speed are simulator values used
 only to compute the reward, never given to the agent.

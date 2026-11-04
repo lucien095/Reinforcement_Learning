@@ -19,7 +19,8 @@ Files:
 | Term | Value |
 | --- | --- |
 | progress | `+10 * meters driven forward` (negative when driving backwards) |
-| overspeed | `-1.5 * max(0, speed - allowed_speed(progress))` |
+| overspeed | `-0.8 * min(1.5, max(0, speed - allowed_speed(progress)))` |
+| near wall | `-1.0 * max(0, (0.5 - wall_dist) / 0.5)`; the track center is always at least 0.69 from the walls |
 | steering change | `-0.05 * abs(steer - prev_steer)` |
 | stall | `-0.3` per step while speed < 0.3 m/s; after 150 such steps in a row (3 s) the episode ends with `-10` |
 | checkpoint | `+0.5` |
@@ -77,3 +78,9 @@ Known problem: in runs 3 and 4 the policy degrades after about 200k steps by bra
 the hairpin (motor -1, speed near 0, ending against the wall). Ideas: reduce the overspeed penalty or cap it
 per step, add a reward for keeping speed close to the allowed speed, use more environments, or train longer
 with checkpoint selection by hairpin pass rate.
+
+| 5 | overspeed penalty 0.8 with a cap of 1.5 m/s, from the 4/10 checkpoint | 2/10 at 48k, 0/10 at 128k (speed about right, but turned in too late) |
+| 6 | added the near-wall penalty | 0/10 at 64k, still running |
+
+Note: the policy sees only the camera image. Wall distance, speed and the allowed speed are simulator values used
+only to compute the reward, never given to the agent.

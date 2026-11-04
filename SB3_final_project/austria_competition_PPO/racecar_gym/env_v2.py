@@ -44,7 +44,10 @@ class RaceEnvV2(gym.Env):
                  max_steps: int = 2500,
                  # reward parameters
                  k_progress: float = 10.0,  # reward per meter of forward progress
-                 k_overspeed: float = 1.5,  # penalty per (m/s) above the braking envelope, per step
+                 k_overspeed: float = 0.8,  # penalty per (m/s) above the braking envelope, per step
+                 max_overspeed: float = 1.5,  # excess speed counted per step (caps the penalty, avoids over-braking)
+                 k_wall: float = 1.0,  # max per-step penalty for driving close to a wall
+                 wall_margin: float = 0.5,  # wall distance (normalized) below which the penalty starts
                  k_steer: float = 0.05,  # penalty per unit of steering change
                  k_stall: float = 0.3,  # penalty per step while standing still
                  stall_speed: float = 0.3,  # below this speed (m/s) the car counts as standing still
@@ -76,7 +79,10 @@ class RaceEnvV2(gym.Env):
         self.max_steps = max_steps
         self.k_progress = k_progress
         self.k_overspeed = k_overspeed
+        self.max_overspeed = max_overspeed
         self.k_steer = k_steer
+        self.k_wall = k_wall
+        self.wall_margin = wall_margin
         self.k_stall = k_stall
         self.stall_speed = stall_speed
         self.stall_limit = stall_limit
@@ -181,8 +187,12 @@ class RaceEnvV2(gym.Env):
         overspeed = max(0.0, speed - allowed)
 
         reward = self.k_progress * meters
-        reward -= self.k_overspeed * overspeed
+        reward -= self.k_overspeed * min(overspeed, self.max_overspeed)
         reward -= self.k_steer * abs(steering_action - self.prev_steer)
+        # Dense warning before a crash: the track center is always at least 0.69 away from the walls,
+        # so this never penalizes a well driven line. It teaches the agent to turn in early.
+        wall_dist = float(infos["obstacle"])
+        reward -= self.k_wall * max(0.0, (self.wall_margin - wall_dist) / self.wall_margin)
         # Standing still must always be worse than trying: otherwise parking in front of a corner
         # (no crash, tiny penalty) beats driving through it.
         stalled = speed < self.stall_speed

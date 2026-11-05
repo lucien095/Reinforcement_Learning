@@ -1,4 +1,4 @@
-"""Score a model exactly like the competition server does (without the HTTP layer).
+"""Score a model like the competition server does (without the HTTP layer), using the staff RaceEnv.
 
 Scenario 'austria_competition', collisions respawn the car and shorten the time limit,
 score = lap + progress - 1.
@@ -10,7 +10,7 @@ import sys
 import numpy as np
 
 from agent_v2 import PPOAgent
-from racecar_gym.env import RaceEnv
+from racecar_gym.env_competition import RaceEnv  # the staff environment, not the training wrapper
 
 
 def run_episode(agent: PPOAgent, max_steps: int = 20000):

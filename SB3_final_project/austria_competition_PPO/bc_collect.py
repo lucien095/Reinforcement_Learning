@@ -35,6 +35,8 @@ def collect(job):
     import random
     random.seed(seed)
     env = RaceEnvV2(hard_start_prob=hard_prob, crash_replay_prob=0.0, max_steps=1500)
+    # Start more often before the two sharpest corners (progress 0.32 and 0.51), where policies fail most.
+    env.corner_entries = [0.1, 0.323, 0.323, 0.323, 0.507, 0.507, 0.507, 0.608, 0.667, 0.863, 0.897]
     expert = ExpertDriver()
     agent = None
     if policy_path:
@@ -92,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--policy', type=str, default=None, help='Current policy (.zip) for DAgger iterations.')
     parser.add_argument('--beta', type=float, default=1.0, help='Probability that an episode is driven by the expert.')
-    parser.add_argument('--hard-start-prob', type=float, default=0.6)
+    parser.add_argument('--hard-start-prob', type=float, default=0.8)
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 

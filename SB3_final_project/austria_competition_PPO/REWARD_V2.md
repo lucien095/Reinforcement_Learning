@@ -84,3 +84,25 @@ with checkpoint selection by hairpin pass rate.
 
 Note: the policy sees only the camera image. Wall distance, speed and the allowed speed are simulator values used
 only to compute the reward, never given to the agent.
+
+## Behavior cloning from a privileged expert (what finally worked)
+
+RL alone did not get the camera policy through the corners within the available compute. The evaluation
+environment also turned out to be different from the training wrapper: the real competition environment
+(`racecar_gym/env_competition.py`, a copy of the staff `Demo/racecar_gym/env.py`) starts at the start line,
+does not end the episode on a crash, and removes `30 + 10 * speed^2` seconds of the 100 s limit for every
+crash. Score = laps + progress, so the goal is to drive as many crash-free laps as possible in 100 s.
+
+Pipeline:
+1. `expert_driver.py`: a controller that uses the true car pose, speed and the track center line (pure
+   pursuit steering plus the braking envelope of `SpeedProfile`). It drives about 2 laps in 100 s without a
+   crash in the competition environment (score 1.99).
+2. `bc_collect.py`: the expert labels every camera frame with its action (iteration 0: expert drives with
+   noise bursts; later iterations: the current CNN policy drives, DAgger).
+3. `bc_train.py`: trains the PPO `CnnPolicy` (same network, 8 stacked 84x84 gray frames) with an MSE loss on
+   the expert actions.
+4. `evaluate_competition.py`: scores a model with the staff environment.
+
+`models_v2/bc_dagger_iter5.zip`: after iteration 0 (120k expert samples) and 5 DAgger iterations (20k samples
+per worker each), the competition score is 1.80 on average over 8 episodes (7 episodes about 1.9, one 0.94).
+Run it with `python agent_v2.py --model models_v2/bc_dagger_iter5.zip --url http://localhost:5000`.

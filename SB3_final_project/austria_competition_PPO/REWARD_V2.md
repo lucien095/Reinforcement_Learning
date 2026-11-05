@@ -106,3 +106,10 @@ Pipeline:
 `models_v2/bc_dagger_iter5.zip`: after iteration 0 (120k expert samples) and 5 DAgger iterations (20k samples
 per worker each), the competition score is 1.80 on average over 8 episodes (7 episodes about 1.9, one 0.94).
 Run it with `python agent_v2.py --model models_v2/bc_dagger_iter5.zip --url http://localhost:5000`.
+
+`models_v2/bc_dagger_iter8.zip` (after 8 DAgger iterations): competition score 1.92 on average over 8 episodes
+(min 1.49, max 2.00), every episode lasted the full 100 s. Evaluate with
+`PYTHONPATH=. python evaluate_competition.py models_v2/bc_dagger_iter8.zip 4`.
+
+A faster expert (`speed_scale` 0.75, 42.6 s per lap instead of 50 s) was tried as well, but the camera policy
+could not copy its tighter braking: the competition score fell to 0.6 to 1.1. The expert speed 0.6 stays.

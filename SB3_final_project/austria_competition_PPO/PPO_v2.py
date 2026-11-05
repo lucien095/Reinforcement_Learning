@@ -48,11 +48,16 @@ if __name__ == '__main__':
     parser.add_argument('--resume', type=str, default=None, help='Path of a checkpoint (.zip) to continue from.')
     parser.add_argument('--lr', type=float, default=None,
                         help='Constant learning rate. Default: linear decay from 3e-4 (fresh run) or the saved value (resume).')
+    parser.add_argument('--n-epochs', type=int, default=10)
+    parser.add_argument('--batch-size', type=int, default=1024)
+    parser.add_argument('--ent-coef', type=float, default=0.02)
+    parser.add_argument('--save-freq', type=int, default=2000, help='Checkpoint every N vectorized steps.')
+    parser.add_argument('--save-dir', type=str, default='./logs_as_PPO_v2/')
     args = parser.parse_args()
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=2000,
-        save_path="./logs_as_PPO_v2/",
+        save_freq=args.save_freq,
+        save_path=args.save_dir,
         name_prefix="rl_model_v2",
     )
 
@@ -61,17 +66,17 @@ if __name__ == '__main__':
     env = VecMonitor(env)
 
     if args.resume:
-        custom_objects = {}
+        custom_objects = {"n_epochs": args.n_epochs, "batch_size": args.batch_size, "ent_coef": args.ent_coef}
         if args.lr is not None:
-            custom_objects = {"learning_rate": args.lr, "lr_schedule": lambda _: args.lr}
+            custom_objects.update({"learning_rate": args.lr, "lr_schedule": lambda _: args.lr})
         model = PPO.load(args.resume, env=env, tensorboard_log="./PPO_v2_tensorboard/",
                          custom_objects=custom_objects)
     else:
         model = PPO("CnnPolicy", env, verbose=1,
-                    n_steps=512, batch_size=1024,
+                    n_steps=512, batch_size=args.batch_size, n_epochs=args.n_epochs,
                     gamma=0.995, gae_lambda=0.95,  # longer horizon: braking pays off several seconds later
                     learning_rate=args.lr if args.lr is not None else linear_schedule(3e-4),
-                    ent_coef=0.02, vf_coef=0.5,
+                    ent_coef=args.ent_coef, vf_coef=0.5,
                     tensorboard_log="./PPO_v2_tensorboard/")
     model.learn(total_timesteps=args.total_timesteps, callback=checkpoint_callback)
-    model.save("./logs_as_PPO_v2/final_model_v2")
+    model.save(args.save_dir + "final_model_v2")

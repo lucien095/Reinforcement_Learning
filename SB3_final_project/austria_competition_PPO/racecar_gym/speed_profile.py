@@ -27,6 +27,7 @@ class SpeedProfile:
     def __init__(self,
                  maps_path: str = DEFAULT_MAPS,
                  resolution: float = 0.05,
+                 origin=(-50.0, -50.0),
                  n_bins: int = 400,
                  v_max: float = 5.0,
                  v_min: float = 1.0,
@@ -50,7 +51,12 @@ class SpeedProfile:
                 continue
             w = obstacle_map[sel] ** 4 + 1e-9
             points.append((idx * w[:, None]).sum(0) / w.sum())
-        points = _circular_smooth(np.array(points) * resolution, 5)
+        points_px = _circular_smooth(np.array(points), 5)  # (row, col) in pixels
+        points = points_px * resolution
+        # World coordinates, same convention as GridMap.to_meter (origin -50, -50; map height in pixels).
+        height = progress_map.shape[0]
+        self.center_world = np.stack([points_px[:, 1] * resolution + origin[0],
+                                      origin[1] - (points_px[:, 0] - height) * resolution], axis=1)
 
         # 2. Heading change per meter (curvature), smoothed over about 1.5 m.
         seg = np.roll(points, -1, axis=0) - points

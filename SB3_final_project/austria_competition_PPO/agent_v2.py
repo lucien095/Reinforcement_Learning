@@ -4,7 +4,8 @@ The preprocessing is identical to the training pipeline in PPO_v2.py:
     camera (3, 128, 128) -> channel last -> gray scale -> resize 84 (INTER_AREA) -> stack of 8 frames.
 
 Usage with the competition server (server.py running on --port 5000):
-    python agent_v2.py --model models_v2/best_model.zip --url http://localhost:5000
+    python agent_v2.py --model models_v2/bc_dagger_iter8.zip --url http://localhost:5000
+    (--model a.zip,b.zip,c.zip averages the actions of several models)
 """
 import argparse
 
@@ -14,9 +15,12 @@ from stable_baselines3 import PPO
 
 
 class PPOAgent:
-    def __init__(self, model_path: str, n_stack: int = 8, size: int = 84):
-        self.model = PPO.load(model_path, device='cpu')
+    def __init__(self, model_path: str, n_stack: int = 8, size: int = 84, motor_scale: float = 1.0):
+        # Several models may be given as a comma separated list; their actions are averaged (ensemble).
+        self.models = [PPO.load(path, device='cpu') for path in model_path.split(',')]
+        self.model = self.models[0]
         self.n_stack = n_stack
+        self.motor_scale = motor_scale  # < 1 makes the car slower and safer
         self.size = size
         self.stack = np.zeros((size, size, n_stack), dtype=np.uint8)
         self.first = True
@@ -39,8 +43,11 @@ class PPOAgent:
         # older channels are zero after a reset.
         self.stack = np.roll(self.stack, shift=-1, axis=-1)
         self.stack[..., -1] = frame
-        action, _ = self.model.predict(self.stack, deterministic=True)
-        return np.asarray(action, dtype=np.float32).reshape(-1)[:2]
+        actions = [np.asarray(m.predict(self.stack, deterministic=True)[0], dtype=np.float32).reshape(-1)[:2]
+                   for m in self.models]
+        action = np.mean(actions, axis=0).astype(np.float32)
+        action[0] *= self.motor_scale
+        return action
 
 
 if __name__ == '__main__':

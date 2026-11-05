@@ -14,7 +14,10 @@ class ExpertDriver:
     MAX_STEER_ANGLE = 0.42 * 0.5  # max_steering_angle * steering_multiplier
 
     # steer_sign = -1: a positive steering command turns the car clockwise (measured).
-    # The other defaults were picked by a grid search: 8/8 passes through the two sharpest corners.
+    # The other defaults were picked by grid searches: 8/8 passes through the two sharpest corners, and the
+    # fastest crash-free lap in the competition environment (42.6 s at speed_scale 0.75, 50 s at 0.6;
+    # 0.9 and above crash). speed_scale 0.6 is used for the camera policy: with 0.75 the CNN could not copy the
+    # tighter braking (competition score fell to about 0.6 to 1.1 instead of 1.7 to 1.8).
     def __init__(self, profile: SpeedProfile = None, steer_sign: float = -1.0,
                  lookahead_base: float = 0.7, lookahead_gain: float = 0.0,
                  speed_scale: float = 0.6, speed_gain: float = 3.0, v_cap: float = 3.3,
